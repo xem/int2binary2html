@@ -1,0 +1,159 @@
+﻿<style>
+body { font-family: arial; width: 850px; margin: auto }
+h1 { text-align: center }
+textarea, xmp { width: 850px }
+xmp { word-wrap: break-word; white-space: pre-wrap; overflow: hidden; }
+</style>
+
+<p>
+
+<h1>int2binary2html</h1>
+
+<p><hr>
+
+<p><i>This tool allows to transform a JS array of integers (between 0 and 255) in binary:</i>
+
+<br>
+<p><hr>
+<br>
+
+<p><b>Integers</b>
+<p><textarea id=t rows=5 cols=80>[0,1,2,3,4,5,126,127,128,251,252,253,0b11111110,0xFF] // edit me!</textarea>
+
+<!-- [...Array(256).keys()] -->
+
+<p><b>Binary</b>
+<p><textarea id=b rows=3 cols=80 readonly></textarea>
+<p><a href="" id=dl1 download="ints.bin">download binary file</a> (<span id=size1></span> bytes)
+
+<br>
+<br>
+<p><hr>
+
+<p><i>This binary code can be packed inside a HTML file and the integers can be retrieved with JavaScript,<br>via one of these 3 different approaches (wink wink Js13kGames):</i>
+
+<br>
+<p><hr>
+<br>
+
+<p><b>1) Self-XHR</b>
+<p>The binary code is placed at the end of the HTML file and retrieved using XHR.
+
+<p><b>Upsides:</b>
+<br>- All ints take 1 byte (no need to escape certain chars).
+<br>- The binary payload is invisible in the page (placed inside a hidden xmp tag).
+<br>- Lighter than putting your binary code in a separate file.
+<p><b>Downsides:</b>
+<br>- Doesn't work with file:// protocol.
+<br>- UTF-8 BOM (or meta tag) is not included. You'll need to add it if you want to display non-latin chars or emoji.
+
+<xmp style=background:#def;display:inline-block;padding:10px id=html1></xmp>
+
+<p><a href="" id=dl2 download="selfXHR.html">download HTML file</a> (<span id=size2></span> bytes)
+
+<br>
+<br>
+<p><hr>
+
+<p><b>2) Base64</b>
+<p>The binary code is encoded in base64 and placed in a JS string.
+<p><b>Upsides:</b>
+<br>- Super light decoder.
+<br>- 100% ASCII.
+<br>- Base64 gzips well (almost as well as raw binary).
+<p><b>Downsides:</b>
+<br>- Gzip performance depends on your data, you have to check if it saves bytes compared to self-XHR.
+
+<xmp style=background:#def;display:inline-block;padding:10px id=html3></xmp>
+
+<p><a href="" id=dl4 download="base64.html">download HTML file</a> (<span id=size4></span> bytes)
+
+<br>
+<br>
+<p><hr>
+
+<p><b>3) Latin-1 string</b>
+<p>The binary code is escaped and placed in a JS string.
+<p>The trick is that the HTML file is encoded in Latin-1, so every char between 0 and 255 is encoded on 1 byte (contrary to UTF-8, where every char after U+007F is encoded on 2 bytes).
+<p><b>Upsides:</b>
+<br>- Browsers parse HTML files in Latin-1 by default, so no need to declare a charset or use a BOM.
+<br>- No XHR (works with file:// protocol).
+<br>- No weird NULL characters to handle.
+<p><b>Downsides:</b>
+<br>- Currently 11 bytes bigger than self-XHR (to be improved)
+<br>- Some Latin-1 chars are not the same as Unicode's code points 00 to FF, so they must be converted (see code below).
+<br>- The chars "\", "\r" and "`" must be escaped inside the string.
+<br>- The HTML file encoded in Latin-1 can't include non-latin or emoji (but their HTML entities are okay).
+<br>- Take care to keep the file encoded in Latin-1 (a.k.a iso-8859-1 a.k.a ANSI) when you edit it!
+
+<xmp style=background:#def;display:inline-block;padding:10px id=html2></xmp>
+
+<p><a href="" id=dl3 download="latin1.html">download HTML file</a> (<span id=size3></span> bytes)
+
+
+<br>
+<br>
+<p><hr>
+
+<p><i>Choose one file, replace the console.log with your JS code and have fun!</i>
+
+<br>
+<p><hr>
+<br>
+
+<script>
+t.oninput = function(){
+  ints = eval(t.value);
+  
+  
+  // Hex
+  dl1.href = "data:application/octet-stream;base64,"+btoa(String.fromCharCode.apply(!1,new Uint8Array(ints)));
+  
+  hex = "";
+  
+  for(i of ints) hex += ("0" + i.toString(16)).slice(-2) + " ";
+  
+  b.value = hex;
+  
+  size1.innerHTML = ints.length;
+  
+  // XHR
+  
+  code = `<script>with(new XMLHttpRequest)open("GET","."),responseType='arraybuffer',send(),onload=z=>console.log(new Uint8Array(response.slice(-${ints.length})))<\/script><xmp hidden>` + String.fromCharCode.apply(!1,new Uint8Array(ints));
+  
+  html1.innerHTML = code;
+  
+  dl2.href = "data:application/octet-stream;base64," + btoa(code);
+  
+  size2.innerHTML = code.length;
+
+  
+  // Latin-1
+  
+  latin1stringescaped = String.fromCharCode.apply(!1,new Uint8Array(ints)).replace(/\\/g,"\\").replace(/`/g,"\\`").replace(/\r/g,"\\r");
+  
+  code2 = `<script>for(i of\`${latin1stringescaped}\`)b=i.charCodeAt(),console.log(b=6E4<b?0:255<b?[48,,1,6,5,13,7,8,17,23,55,32,41,,84,,,98,0,3,4,9,93,94,39,67,56,33,42,,85,79].indexOf(b%99)+128:b)<\/script>`;
+  
+  html2.innerHTML = code2;
+
+  dl3.href = "data:application/octet-stream;base64," + btoa(code2);
+  
+  size3.innerHTML = code2.length;
+  
+  
+  // Base64
+  
+  code3 = `<script>for(i of atob\`${btoa(String.fromCharCode.apply(!1,new Uint8Array(ints)))}\`)console.log(i.charCodeAt())<\/script>`;
+  
+  html3.innerHTML = code3;
+  
+  dl4.href = "data:application/octet-stream;base64," + btoa(code3);
+  
+  size4.innerHTML = code3.length;
+  
+}
+
+onload = function(){
+  t.oninput();
+}
+</script>
