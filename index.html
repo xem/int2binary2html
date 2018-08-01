@@ -55,7 +55,30 @@ xmp { word-wrap: break-word; white-space: pre-wrap; overflow: hidden; }
 <br>
 <p><hr>
 
-<p><b>2) Base64</b>
+<p><b>2) Latin-1 string</b>
+<p>The binary code is escaped and placed in a JS string.
+<p>The trick is that the HTML file is encoded in Latin-1, so every char between 0 and 255 is encoded on 1 byte (contrary to UTF-8, where every char after U+007F is encoded on 2 bytes).
+<p><b>Upsides:</b>
+<br>- Decoder is 38 bytes shorter than self-XHR.
+<br>- Browsers parse HTML files in Latin-1 by default, so no need to declare a charset or use a BOM.
+<br>- No XHR (works with file:// protocol).
+<br>- No weird NULL characters to handle.
+<p><b>Downsides:</b>
+<br>- Some Latin-1 chars are not the same as Unicode's code points 00 to FF, so they must be converted (see code below).
+<br>- The chars "\", "\r" and "`" must be escaped inside the string, so in the long run it may get bigger than self-XHR.
+<br>- The HTML file encoded in Latin-1 can't include non-latin or emoji (but their HTML entities are okay).
+<br>- Take care to keep the file encoded in Latin-1 (a.k.a iso-8859-1 a.k.a ANSI) when you edit it!
+
+<xmp style=background:#def;display:inline-block;padding:10px id=html2></xmp>
+
+<p><a href="" id=dl3 download="latin1.html">download HTML file</a> (<span id=size3></span> bytes)
+
+
+<br>
+<br>
+<p><hr>
+
+<p><b>3) Base64</b>
 <p>The binary code is encoded in base64 and placed in a JS string.
 <p><b>Upsides:</b>
 <br>- Super light decoder.
@@ -67,29 +90,6 @@ xmp { word-wrap: break-word; white-space: pre-wrap; overflow: hidden; }
 <xmp style=background:#def;display:inline-block;padding:10px id=html3></xmp>
 
 <p><a href="" id=dl4 download="base64.html">download HTML file</a> (<span id=size4></span> bytes)
-
-<br>
-<br>
-<p><hr>
-
-<p><b>3) Latin-1 string</b>
-<p>The binary code is escaped and placed in a JS string.
-<p>The trick is that the HTML file is encoded in Latin-1, so every char between 0 and 255 is encoded on 1 byte (contrary to UTF-8, where every char after U+007F is encoded on 2 bytes).
-<p><b>Upsides:</b>
-<br>- Browsers parse HTML files in Latin-1 by default, so no need to declare a charset or use a BOM.
-<br>- No XHR (works with file:// protocol).
-<br>- No weird NULL characters to handle.
-<p><b>Downsides:</b>
-<br>- Currently 11 bytes bigger than self-XHR (to be improved)
-<br>- Some Latin-1 chars are not the same as Unicode's code points 00 to FF, so they must be converted (see code below).
-<br>- The chars "\", "\r" and "`" must be escaped inside the string.
-<br>- The HTML file encoded in Latin-1 can't include non-latin or emoji (but their HTML entities are okay).
-<br>- Take care to keep the file encoded in Latin-1 (a.k.a iso-8859-1 a.k.a ANSI) when you edit it!
-
-<xmp style=background:#def;display:inline-block;padding:10px id=html2></xmp>
-
-<p><a href="" id=dl3 download="latin1.html">download HTML file</a> (<span id=size3></span> bytes)
-
 
 <br>
 <br>
@@ -132,18 +132,32 @@ t.oninput = function(){
   
   latin1stringescaped = String.fromCharCode.apply(!1,new Uint8Array(ints)).replace(/\\/g,"\\").replace(/`/g,"\\`").replace(/\r/g,"\\r");
   
-  code2 = `<script>for(i of\`${latin1stringescaped}\`)b=i.charCodeAt(),console.log(b=6E4<b?0:255<b?[48,,1,6,5,13,7,8,17,23,55,32,41,,84,,,98,0,3,4,9,93,94,39,67,56,33,42,,85,79].indexOf(b%99)+128:b)<\/script>`;
+  code2 = `<script>for(i of\`${latin1stringescaped}\`)b=i.charCodeAt(),console.log(6E4<b?0:255<b?"€ ‚ƒ„…†‡ˆ‰Š‹Œ Ž  ‘’“”•–—˜™š›œ žŸ".indexOf(i)+128:b)<\/script>`;
   
   html2.innerHTML = code2;
 
-  dl3.href = "data:application/octet-stream;base64," + btoa(code2);
+  dl3.href = "data:application/octet-stream;base64," + btoa(
+    `<script>for(i of\`${latin1stringescaped}\`)b=i.charCodeAt(),console.log(6E4<b?0:255<b?"`
+    
+    +
+    
+    String.fromCharCode.apply(!1,new Uint8Array(
+    
+    [128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159]
+
+    ))
+    
+    +
+    
+    `".indexOf(i)+128:b)<\/script>`
+  );
   
   size3.innerHTML = code2.length;
   
   
   // Base64
   
-  code3 = `<script>for(i of atob\`${btoa(String.fromCharCode.apply(!1,new Uint8Array(ints)))}\`)console.log(i.charCodeAt())<\/script>`;
+  code3 = `<script>for(i of atob\`${btoa(String.fromCharCode.apply(!1,new Uint8Array(ints))).replace(/=*$/,"")}\`)console.log(i.charCodeAt())<\/script>`;
   
   html3.innerHTML = code3;
   
