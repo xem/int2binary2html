@@ -130,7 +130,7 @@ t.oninput = function(){
   
   // Latin-1
   
-  latin1stringescaped = String.fromCharCode.apply(!1,new Uint8Array(ints)).replace(/\\/g,"\\").replace(/`/g,"\\`").replace(/\r/g,"\\r");
+  latin1stringescaped = String.fromCharCode.apply(!1,new Uint8Array(ints)).replace(/\\/g,"\\\\").replace(/`/g,"\\`").replace(/\r/g,"\\r");
   
   code2 = `<script>for(i of\`${latin1stringescaped}\`)b=i.charCodeAt(),console.log(6E4<b?0:255<b?"€ ‚ƒ„…†‡ˆ‰Š‹Œ Ž  ‘’“”•–—˜™š›œ žŸ".indexOf(i)+128:b)<\/script>`;
   
